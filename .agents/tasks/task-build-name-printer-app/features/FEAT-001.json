@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Create frontend assets (index.html, styles.css, script.js) and Lambda handler code as separate files, then rewrite infra/stack.py to properly deploy them using correct CDK v2 constructs.",
+  "status": "in_progress",
+  "steps": [
+    "Create directory frontend/ at the project root for static website assets.",
+    "Create frontend/index.html with: a proper HTML5 document structure, a form with a text input for name and a submit button, a result div to display the greeting, a link to styles.css, a script tag for script.js. The HTML should include a meta viewport tag for mobile responsiveness.",
+    "Create frontend/styles.css with: mobile-responsive styling, centered layout, styled form elements (input and button), styled result display area, clean modern look with appropriate fonts, colors, and spacing.",
+    "Create frontend/script.js with: event listener on form submit that prevents default, reads the name input value, validates it is not empty/whitespace (shows error message if empty), sends POST request to the API Gateway URL (the URL will be injected as a placeholder API_ENDPOINT that can be replaced after deployment), displays the 'Hello [name]!' response in the result div, handles errors gracefully showing user-friendly error messages.",
+    "Create directory lambda/ at the project root for the Lambda function code.",
+    "Create lambda/index.py with a handler function that: parses the JSON body from the event (handling both direct body and base64-encoded body), extracts the 'name' field, validates it is not empty/whitespace (returns 400 with error message if invalid), returns 200 with JSON body containing the greeting 'Hello, [name]!', includes proper CORS headers (Access-Control-Allow-Origin: *, Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Methods: POST,OPTIONS), wraps everything in try/except returning 500 on unexpected errors.",
+    "Rewrite infra/stack.py to fix all issues: (a) Import aws_s3_deployment and use BucketDeployment to upload frontend/ assets to the S3 bucket instead of the non-existent add_object_from_asset method. (b) Use origins.S3BucketOrigin.with_origin_access_control(website_bucket) for the CloudFront origin instead of the incorrect S3Origin with oac parameter - remove the manual OAC creation. (c) Change the Lambda function to use Code.from_asset pointing to the lambda/ directory instead of inline code, update runtime to PYTHON_3_12. (d) Add a /submit resource on the API Gateway and put the POST method there (api.root.add_resource('submit').add_method('POST', ...)) so the endpoint is /submit. (e) Keep the CORS preflight configuration on the RestApi. (f) Add CfnOutput for the API Gateway URL. (g) Add a grant_read to give CloudFront/OAI access to the bucket (BucketDeployment handles this but ensure distribution can read). (h) Remove the manual OAC construct since S3BucketOrigin.with_origin_access_control handles it automatically."
+  ],
+  "acceptance_criteria": [
+    "frontend/index.html exists and is valid HTML5 with a form, result div, and proper responsive meta tags",
+    "frontend/styles.css exists with mobile-responsive styling",
+    "frontend/script.js exists with form submission logic, validation, and error handling",
+    "lambda/index.py exists with proper JSON parsing, validation, CORS headers, and error handling",
+    "infra/stack.py uses BucketDeployment from aws_s3_deployment to deploy frontend/ assets",
+    "infra/stack.py uses S3BucketOrigin.with_origin_access_control for CloudFront origin",
+    "infra/stack.py uses Code.from_asset for Lambda pointing to lambda/ directory",
+    "infra/stack.py defines API Gateway with /submit resource and POST method",
+    "Running cdk synth from infra/ directory succeeds without errors"
+  ],
+  "verification": [
+    "Run: cd /projects/sandbox/hello-world-name-printer/infra && pip install -r requirements.txt && python -c \"import sys; sys.path.insert(0,'.'); from stack import HelloWorldNamePrinterStack; from aws_cdk import App; app = App(); HelloWorldNamePrinterStack(app, 'Test'); app.synth()\" to confirm CDK synthesis works",
+    "Verify frontend/index.html, frontend/styles.css, frontend/script.js, and lambda/index.py all exist",
+    "Verify infra/stack.py does NOT contain 'add_object_from_asset' or 'S3Origin(' (the old incorrect patterns)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

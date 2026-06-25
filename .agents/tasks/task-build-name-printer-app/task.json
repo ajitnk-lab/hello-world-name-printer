@@ -1,0 +1,7 @@
+{
+  "task_id": "task-build-name-printer-app",
+  "task_description": "Build a complete serverless web application that asks users for their name and displays a personalized greeting. Includes frontend assets (HTML/CSS/JS), Lambda function handler, and corrected CDK infrastructure stack.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

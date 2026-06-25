@@ -1,6 +1,7 @@
 from aws_cdk import (
     Stack,
     aws_s3 as s3,
+    aws_s3_deployment as s3_deployment,
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as origins,
     aws_lambda as lambda_,
@@ -9,7 +10,7 @@ from aws_cdk import (
     RemovalPolicy
 )
 from constructs import Construct
-import os
+
 
 class HelloWorldNamePrinterStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -23,45 +24,31 @@ class HelloWorldNamePrinterStack(Stack):
             auto_delete_objects=True
         )
 
-        # Upload index.html to S3
-        s3_deployment = s3.Bucket.add_object_from_asset(
-            website_bucket,
-            "index.html",
-            path="index.html",
-            content_type="text/html",
-            content="<html><body><h1>Hello World Name Printer</h1><form id='nameForm'><input type='text' id='name' placeholder='Enter your name'><button type='submit'>Submit</button></form><div id='result'></div></body></html>"
-        )
-
-        # Create CloudFront OAC
-        oac = cloudfront.OriginAccessControl(
-            self, "OAC",
-            origin_access_control_origin_type=cloudfront.OriginAccessControlOriginTypes.S3,
-            signing_behavior=cloudfront.OriginAccessControlSigningBehavior.ALWAYS,
-            signing_protocol=cloudfront.OriginAccessControlSigningProtocol.SIGV4
-        )
-
-        # Create CloudFront distribution
+        # Create CloudFront distribution with S3 origin using OAC (managed automatically)
         distribution = cloudfront.Distribution(
             self, "Distribution",
             default_behavior=cloudfront.BehaviorOptions(
-                origin=origins.S3Origin(
-                    bucket=website_bucket,
-                    origin_access_control=oac
-                ),
+                origin=origins.S3BucketOrigin.with_origin_access_control(website_bucket),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
             ),
             default_root_object="index.html"
         )
 
+        # Deploy frontend assets to S3
+        s3_deployment.BucketDeployment(
+            self, "DeployWebsite",
+            sources=[s3_deployment.Source.asset("../frontend")],
+            destination_bucket=website_bucket,
+            distribution=distribution,
+            distribution_paths=["/*"]
+        )
+
         # Create Lambda function
         handler = lambda_.Function(
             self, "NameHandler",
-            runtime=lambda_.Runtime.PYTHON_3_9,
+            runtime=lambda_.Runtime.PYTHON_3_12,
             handler="index.handler",
-            code=lambda_.Code.from_inline(
-                "def handler(event, context):\n    name = event['body']\n    return {'statusCode': 200, 'body': f'Hello, {name}!'}"
-            ),
-            removal_policy=RemovalPolicy.DESTROY
+            code=lambda_.Code.from_asset("../lambda")
         )
 
         # Create API Gateway
@@ -69,12 +56,13 @@ class HelloWorldNamePrinterStack(Stack):
             self, "NameAPI",
             default_cors_preflight_options=apigw.CorsOptions(
                 allow_origins=["*"],
-                allow_methods=["POST"]
-            ),
-            removal_policy=RemovalPolicy.DESTROY
+                allow_methods=["POST", "OPTIONS"]
+            )
         )
 
-        api.root.add_method(
+        # Add /submit resource with POST method
+        submit_resource = api.root.add_resource("submit")
+        submit_resource.add_method(
             "POST",
             apigw.LambdaIntegration(handler)
         )
@@ -83,4 +71,10 @@ class HelloWorldNamePrinterStack(Stack):
         CfnOutput(
             self, "WebsiteURL",
             value=f"https://{distribution.domain_name}"
+        )
+
+        # Output the API Gateway URL
+        CfnOutput(
+            self, "ApiURL",
+            value=api.url
         )
