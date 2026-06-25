@@ -1,3 +1,7 @@
+// TODO: After deploying the CDK stack, replace the value below with the actual
+// ApiURL output from the stack (e.g., "https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod").
+// You can find this value by running: cdk deploy --outputs-file outputs.json
+// Then copy the ApiURL value from that file into this variable.
 const API_ENDPOINT = "API_ENDPOINT";
 
 document.getElementById("nameForm").addEventListener("submit", async function (e) {
@@ -5,6 +9,7 @@ document.getElementById("nameForm").addEventListener("submit", async function (e
 
     const nameInput = document.getElementById("name");
     const resultDiv = document.getElementById("result");
+    const submitButton = document.querySelector('button[type="submit"]');
     const name = nameInput.value.trim();
 
     // Clear previous result
@@ -17,6 +22,9 @@ document.getElementById("nameForm").addEventListener("submit", async function (e
         resultDiv.className = "error";
         return;
     }
+
+    // Disable button during request to prevent duplicate submissions
+    submitButton.disabled = true;
 
     try {
         const response = await fetch(`${API_ENDPOINT}/submit`, {
@@ -40,5 +48,7 @@ document.getElementById("nameForm").addEventListener("submit", async function (e
     } catch (error) {
         resultDiv.textContent = "Unable to connect to the server. Please try again later.";
         resultDiv.className = "error";
+    } finally {
+        submitButton.disabled = false;
     }
 });

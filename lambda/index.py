@@ -28,6 +28,18 @@ def handler(event, context):
                 "body": json.dumps({"message": "Name is required and cannot be empty."})
             }
 
+        if len(name) > 256:
+            return {
+                "statusCode": 400,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "Content-Type",
+                    "Access-Control-Allow-Methods": "POST,OPTIONS",
+                    "Content-Type": "application/json"
+                },
+                "body": json.dumps({"message": "Name must not exceed 256 characters."})
+            }
+
         return {
             "statusCode": 200,
             "headers": {
