@@ -1,0 +1,24 @@
+{
+  "project_type": "AWS CDK serverless web application (Python CDK, static frontend)",
+  "language": "Python (CDK infrastructure), HTML/CSS/JavaScript (frontend)",
+  "build_system": "Python pip for CDK dependencies, CDK CLI for synthesis",
+  "test_framework": "CDK synth for infrastructure validation",
+  "build_command": "cd infra && pip install -r requirements.txt && cdk synth",
+  "test_command": "cd infra && python -c \"from stack import HelloWorldNamePrinterStack; from aws_cdk import App; app = App(); HelloWorldNamePrinterStack(app, 'Test'); app.synth()\"",
+  "verification_instructions": "1. Install CDK dependencies: pip install -r infra/requirements.txt. 2. Run cdk synth from infra/ directory to validate CloudFormation template generation. 3. Verify frontend files exist and are well-formed HTML/CSS/JS.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "pip install -r infra/requirements.txt",
+  "environment_constraints": "OPEN_INTERNET - full network access available. Python 3.11 and Node.js 22 available. aws-cdk-lib installable via pip.",
+  "contribution_requirements": "Follow the design.md architecture. Use S3 + CloudFront for static hosting, Lambda for processing, API Gateway for REST API.",
+  "key_patterns": "CDK stack defined in infra/stack.py, app entry point in infra/app.py. Frontend assets need to be in a separate directory for S3 deployment.",
+  "relevant_files": [
+    "infra/stack.py",
+    "infra/app.py",
+    "infra/requirements.txt",
+    "infra/cdk.json",
+    ".kiro/specs/design.md",
+    ".kiro/specs/requirements.md",
+    ".kiro/specs/tasks.md"
+  ],
+  "directory_structure": "infra/ - CDK infrastructure code (app.py, stack.py, cdk.json, requirements.txt). Frontend assets need to be created (e.g., frontend/ directory). Lambda handler code needs to be created (e.g., lambda/ directory)."
+}
